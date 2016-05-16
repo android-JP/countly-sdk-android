@@ -6,6 +6,9 @@ import android.util.Log;
 
 import java.lang.reflect.Method;
 
+/**
+ * 消息辅助工具类
+ */
 public class MessagingAdapter {
     private static final String TAG = "MessagingAdapter";
     private final static String MESSAGING_CLASS_NAME = "ly.count.android.sdk.messaging.CountlyMessaging";

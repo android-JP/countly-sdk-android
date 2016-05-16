@@ -118,6 +118,10 @@ public class Countly {
     }
 
     /**
+     *
+     * 创建一个Countly对象：
+     * 创建一个新的请求队列 和初始化
+     *
      * Constructs a Countly object.
      * Creates a new ConnectionQueue and initializes the session timer.
      */
@@ -135,6 +139,9 @@ public class Countly {
 
 
     /**
+     *
+     * 初始化SDK ，这里会上传几个参数，包括serverURL（服务器网址）、appKey、设备标识ID生成策略选择： 优先选择使用OpenUDID生成设备ID/其次选择Google Advertising ID生成设备ID
+     *
      * Initializes the Countly SDK. Call from your main Activity's onCreate() method.
      * Must be called before other SDK methods can be used.
      * Device ID is supplied by OpenUDID service if available, otherwise Advertising ID is used.
@@ -151,6 +158,10 @@ public class Countly {
     }
 
     /**
+     * 如果有设备ID ，最后一个参数“deviceID”直接输入设备ID （每个设备唯一）
+     *
+     *
+     *
      * Initializes the Countly SDK. Call from your main Activity's onCreate() method.
      * Must be called before other SDK methods can be used.
      * @param context application context
@@ -166,6 +177,11 @@ public class Countly {
     }
 
     /**
+     * 几个init方法的最终调用方法：
+     * Activity.onCreate()中调用
+     * 注意：在调用之后，才可以调用其他的SDK方法（除了Countly.onCreate()之外）,并且，需要在Activity的onStart() 和 onStop()方法中也需要相应地调用Countly.onStart()和Countly.onStop()
+     *
+     *
      * Initializes the Countly SDK. Call from your main Activity's onCreate() method.
      * Must be called before other SDK methods can be used.
      * @param context application context
@@ -178,6 +194,8 @@ public class Countly {
      * @throws IllegalStateException if init has previously been called with different values during the same application instance
      */
     public synchronized Countly init(final Context context, final String serverURL, final String appKey, final String deviceID, DeviceId.Type idMode) {
+        /*除了deviceID 可以为null，其他的几个参数必须非空*/
+
         if (context == null) {
             throw new IllegalArgumentException("valid context is required");
         }
@@ -190,16 +208,24 @@ public class Countly {
         if (deviceID != null && deviceID.length() == 0) {
             throw new IllegalArgumentException("valid deviceID is required");
         }
+        /*如果deviceID 为 null 并且 设备标识也没有选择，那么，按照 优先级：OpenUDID > Google Advertising ID ，一次去两个Adapter中判断是否可用来选择默认的deviceID生成策略*/
         if (deviceID == null && idMode == null) {
             if (OpenUDIDAdapter.isOpenUDIDAvailable()) idMode = DeviceId.Type.OPEN_UDID;
             else if (AdvertisingIdAdapter.isAdvertisingIdAvailable()) idMode = DeviceId.Type.ADVERTISING_ID;
         }
+
+        /*如果选择OpenUDID策略，但是没有这个OpenUDID_manager类存在，即无法生成openUDID ，则抛出异常，说不可用openUDID*/
         if (deviceID == null && idMode == DeviceId.Type.OPEN_UDID && !OpenUDIDAdapter.isOpenUDIDAvailable()) {
             throw new IllegalArgumentException("valid deviceID is required because OpenUDID is not available");
         }
+        /*Google Advertising ID同样的情况*/
         if (deviceID == null && idMode == DeviceId.Type.ADVERTISING_ID && !AdvertisingIdAdapter.isAdvertisingIdAvailable()) {
             throw new IllegalArgumentException("valid deviceID is required because Advertising ID is not available (you need to include Google Play services 4.0+ into your project)");
         }
+
+        /*如果 事件队列不为空 并且 1.serverURL 2.appKey 这两个数有不对劲的地方 或者 不满足 请求队列中的deviceId的id与传于的deviceId等满足全null或者相等的安全条件，
+        * 那么，也抛出异常
+        * */
         if (eventQueue_ != null && (!connectionQueue_.getServerURL().equals(serverURL) ||
                                     !connectionQueue_.getAppKey().equals(appKey) ||
                                     !DeviceId.deviceIDEqualsNullSafe(deviceID, idMode, connectionQueue_.getDeviceId()) )) {
@@ -671,6 +697,9 @@ public class Countly {
     }
 
     /**
+     *
+     * 设置UncaughtExceptionHandler ,用于给Thread设置在Thread意外终止时要做的事情（由于线程的run方法本身不会抛出任何checked异常）
+     *
      * Enable crash reporting to send unhandled crash reports to server
      */
     public synchronized Countly enableCrashReporting() {
@@ -712,6 +741,8 @@ public class Countly {
     }
 
     /**
+     * 设置是否在debug时进行log的显示。默认是不显示
+     *
      * Sets whether debug logging is turned on or off. Logging is disabled by default.
      * @param enableLogging true to enable logging, false to disable logging
      * @return Countly instance for easy method chaining
@@ -727,7 +758,26 @@ public class Countly {
 
     private boolean appLaunchDeepLink = true;
 
+
+    /**
+     * 首先，获取Activity对应的启动项Intent对象（实际上是获取这个Activity的一些属性信息）
+     * 如果能够输出log，就输出“Activity 被创建”
+     * @param activity
+     */
     public static void onCreate(Activity activity) {
+        /*实际是activity的Context的实现类：ContextWrapper.getPackageManager()获取到PackageManager对象
+        * PackageManager:
+        * 1、安装，卸载应用
+        2、查询permission相关信息
+        3、查询Application相关信息(application，activity，receiver，service，provider及相应属性等）
+        4、查询已安装应用
+        5、增加，删除permission
+        6、清除用户数据、缓存，代码段等
+        *
+        *
+        * 最终:if application exists main(ru kou) intent , then return this intent
+        * */
+
         Intent launchIntent = activity.getPackageManager().getLaunchIntentForPackage(activity.getPackageName());
 
         if (sharedInstance().isLoggingEnabled()) {

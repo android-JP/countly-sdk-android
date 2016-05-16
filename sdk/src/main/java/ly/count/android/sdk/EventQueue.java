@@ -28,6 +28,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ *
+ * local management 数据queue <---> JSON 转换类
+ *
+ * 注意：这里面所有的方法都没有用同步块synchroized进行标识，这是由于它都是受同一个Countly所操作，这就已经是同步了！！
+ *
  * This class queues event data locally and can convert that event data to JSON
  * for submission to a Count.ly server.
  *

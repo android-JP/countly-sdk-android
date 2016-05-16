@@ -5,6 +5,10 @@ import android.content.Context;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+/**
+ * OpenUDID 的辅助工具类
+ * OpneUDID ,个人理解，就是一种UDID ，这里用于标识app()
+ */
 public class OpenUDIDAdapter {
     private final static String OPEN_UDID_MANAGER_CLASS_NAME = "org.openudid.OpenUDID_manager";
 

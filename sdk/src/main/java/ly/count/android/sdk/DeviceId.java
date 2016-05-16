@@ -163,6 +163,15 @@ public class DeviceId {
     }
 
     /**
+     * 首先，获取传入的deviceId的id（deviceId）
+     * 与传入的id进行比较：
+     * return true成立条件：
+     *  1.deviceId生成策略选择的是确定的：OPEN_UDID 和 ADVERTISING_ID
+     *  2.两个id都为null
+     *  3.deviceId的id 和 传入的id 相等
+     *
+     *
+     *
      * Helper method for null safe comparison of current device ID and the one supplied to Countly.init
      * @return true if supplied device ID equal to the one registered before
      */

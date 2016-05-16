@@ -44,6 +44,7 @@ public class UserData {
 
     //Public methods
     /**
+     * 创建一个UserData对象
      * Constructs a UserData object.
      * @param connectionQueue to process userdata requests
      */
@@ -88,6 +89,10 @@ public class UserData {
     }
 
     /**
+     * 设置用户信息：
+     * 属性（key:String）：name、username、email、organization、phone、picture、picturePath、gender、byear
+     *
+     *
      * Sets information about user with custom properties.
      * In custom properties you can provide any string key values to be stored with user
      * Possible keys are:
