@@ -232,6 +232,7 @@ public class Countly {
             throw new IllegalStateException("Countly cannot be reinitialized with different values");
         }
 
+        //TODO：这里
         // In some cases CountlyMessaging does some background processing, so it needs a way
         // to start Countly on itself
         if (MessagingAdapter.isMessagingAvailable()) {
