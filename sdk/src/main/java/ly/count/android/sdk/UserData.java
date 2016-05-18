@@ -21,8 +21,8 @@ public class UserData {
     public static final String EMAIL_KEY = "email";
     public static final String ORG_KEY = "organization";
     public static final String PHONE_KEY = "phone";
-    public static final String PICTURE_KEY = "picture";
-    public static final String PICTURE_PATH_KEY = "picturePath";
+    public static final String PICTURE_KEY = "picture";/*头像*/
+    public static final String PICTURE_PATH_KEY = "picturePath";/*头像url*/
     public static final String GENDER_KEY = "gender";
     public static final String BYEAR_KEY = "byear";
     public static final String CUSTOM_KEY = "custom";
@@ -98,31 +98,31 @@ public class UserData {
      * Possible keys are:
      * <ul>
      * <li>
-     * name - (String) providing user's full name
+     * name - (String) providing user's full name【全名】
      * </li>
      * <li>
-     * username - (String) providing user's nickname
+     * username - (String) providing user's nickname【昵称】
      * </li>
      * <li>
-     * email - (String) providing user's email address
+     * email - (String) providing user's email address【电子邮件】
      * </li>
      * <li>
-     * organization - (String) providing user's organization's name where user works
+     * organization - (String) providing user's organization's name where user works【组织】
      * </li>
      * <li>
-     * phone - (String) providing user's phone number
+     * phone - (String) providing user's phone number【电话号码】
      * </li>
      * <li>
-     * picture - (String) providing WWW URL to user's avatar or profile picture
+     * picture - (String) providing WWW URL to user's avatar or profile picture【用户头像或者资料图片的URL】
      * </li>
      * <li>
-     * picturePath - (String) providing local path to user's avatar or profile picture
+     * picturePath - (String) providing local path to user's avatar or profile picture【用户头像或资料图片的本地地址】
      * </li>
      * <li>
-     * gender - (String) providing user's gender as M for male and F for female
+     * gender - (String) providing user's gender as M for male and F for female【用户性别：M为男，F为女】
      * </li>
      * <li>
-     * byear - (int) providing user's year of birth as integer
+     * byear - (int) providing user's year of birth as integer【出生年份（整数）】
      * </li>
      * </ul>
      * @param data Map&lt;String, String&gt; with user data
@@ -216,6 +216,7 @@ public class UserData {
     }
 
     /* Create array property, if property does not exist and add value to array, only if value is not yet in the array
+        创建数组属性，如果这个属性之前不存在，那么
      * You can only use it on array properties or properties that do not exist yet
      * @param key String with property name for array property
      * @param value String with value to add to array
@@ -234,6 +235,9 @@ public class UserData {
     }
 
     /*
+        让ConnectionQueue去获取UserData的各个配置信息的json
+     *
+     *
      * Send provided values to server
      */
     public void save(){
@@ -391,6 +395,12 @@ public class UserData {
     }
 
     /**
+     * 供ConnectionQueue调用，返回用户的各个配置信息
+     * （这里，先把各个基本的属性构造成一个json串）
+     * （1：如果这个json串存在，就加上这个json串）
+     * （2：如果有picturePath这一项存在，就让URLEncoder去将这个路径下的图片解析为图片url，然后加上）
+     * 最终得到一个长String串，作为总的参数，进行返回
+     *
      * Returns &user_details= prefixed url to add to request data when making request to server
      * @return a String user_details url part with provided user data
      */
@@ -532,6 +542,13 @@ public class UserData {
         }
     }
 
+    /**
+     *
+     * 在URL中的String请求串中查找“picturePath”属性：如果找到，返回这个路径(UTF-8），否则，返回“”
+     *
+     * @param url
+     * @return
+     */
     //for url query parsing
     public static String getPicturePathFromQuery(URL url){
         String query = url.getQuery();

@@ -13,6 +13,11 @@ public class MessagingAdapter {
     private static final String TAG = "MessagingAdapter";
     private final static String MESSAGING_CLASS_NAME = "ly.count.android.sdk.messaging.CountlyMessaging";
 
+
+    /**
+     * 如果有到导入 sdk-messaging 库，就表示 messaging 是可用的
+     * @return
+     */
     public static boolean isMessagingAvailable() {
         boolean messagingAvailable = false;
         try {
@@ -36,6 +41,18 @@ public class MessagingAdapter {
         }
     }
 
+    /**
+     * 存储配置信息
+     *
+     * 通过反射，获取 CountlyMessaging,java 中的 storeConfiguration 方法 ，然后调用它，实现配置的保存（保存了：context，serverURL，appKey，deviceID，idMode）
+     *
+     * @param context
+     * @param serverURL
+     * @param appKey
+     * @param deviceID
+     * @param idMode
+     * @return
+     */
     public static boolean storeConfiguration(Context context, String serverURL, String appKey, String deviceID, DeviceId.Type idMode) {
         try {
             final Class<?> cls = Class.forName(MESSAGING_CLASS_NAME);

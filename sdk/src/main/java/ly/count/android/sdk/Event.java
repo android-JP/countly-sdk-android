@@ -31,6 +31,14 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
+ * 事件实体类
+ *   每条请求会包含这个3个参数{
+ *       timestamp - 操作时间 10 位 UTC 时间戳
+         hour - 当前用户本地时间 (0 - 23)
+        dow - 当前用户所处星期（0-星期日，1 - 星期一，...6 - 星期六）
+ * }
+ * 所以，这里为了保证多个事件置于同一个请求的情况，每一个事件都应该带有这三个参数！！
+ *
  * This class holds the data for a single Count.ly custom event instance.
  * It also knows how to read & write itself to the Count.ly custom event JSON syntax.
  * See the following link for more info:
@@ -49,9 +57,9 @@ class Event {
     public Map<String, String> segmentation;
     public int count;
     public double sum;
-    public int timestamp;
-    public int hour;
-    public int dow;
+    public int timestamp;/*操作时间 10 位 UTC 时间戳*/
+    public int hour;/*当前用户本地时间 (0 - 23)*/
+    public int dow;/*当前用户所处星期（0-星期日，1 - 星期一，...6 - 星期六）*/
 
     /**
      * Creates and returns a JSONObject containing the event data from this object.
@@ -86,6 +94,9 @@ class Event {
     }
 
     /**
+     * 使用google原生的json进行转换
+     *
+     *
      * Factory method to create an Event from its JSON representation.
      * @param json JSON object to extract event data from
      * @return Event object built from the data in the JSON or null if the "key" value is not
@@ -106,9 +117,10 @@ class Event {
             event.dow = json.optInt(DAY_OF_WEEK);
 
             if (!json.isNull(SEGMENTATION_KEY)) {
+                /*对象中获取子对象*/
                 final JSONObject segm = json.getJSONObject(SEGMENTATION_KEY);
                 final HashMap<String, String> segmentation = new HashMap<String, String>(segm.length());
-                final Iterator nameItr = segm.keys();
+                final Iterator nameItr = segm.keys();/*获取 细分 中的key列表*/
                 while (nameItr.hasNext()) {
                     final String key = (String) nameItr.next();
                     if (!segm.isNull(key)) {

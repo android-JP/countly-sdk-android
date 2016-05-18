@@ -24,6 +24,9 @@ public class DeviceId {
     private Type type;
 
     /**
+     * 以生成策略的方式创建 DeviceId对象
+     *
+     *
      * Initialize DeviceId with Type of OPEN_UDID or ADVERTISING_ID
      * @param type type of ID generation strategy
      */
@@ -37,6 +40,8 @@ public class DeviceId {
     }
 
     /**
+     * 以直接给deviceid的方式创建 DeviceId对象
+     *
      * Initialize DeviceId with Developer-supplied id string
      * @param developerSuppliedId Device ID string supplied by developer
      */
@@ -49,6 +54,15 @@ public class DeviceId {
     }
 
     /**
+     *
+     * （这个方法之前，此对象已经被创建，type成员必有值，id成员看情况）
+     * 初始化 deviceID生成策略，启动所需的服务和发送请求
+     * deviceID将在过了一段时间之后可用
+     *
+     *
+     * 某些时候，Countly可以重写 ID生成策略，比如：用户选择了Advertising ID 策略，但是，Google Play 服务不可用，
+     * 那么，它就就返回到使用OpenUDID
+     *
      * Initialize device ID generation, that is start up required services and send requests.
      * Device ID is expected to be available after some time.
      * In some cases, Countly can override ID generation strategy to other one, for example when
@@ -59,8 +73,17 @@ public class DeviceId {
      * @param raiseExceptions whether to raise exceptions in case of illegal state or not
      */
     public void init(Context context, CountlyStore store, boolean raiseExceptions) {
+
+        /**
+         * 获取被保存的被覆盖的Type
+         */
         Type overriddenType = retrieveOverriddenType(store);
 
+
+        /**
+         * 如果之前选择的Type存在，并且与现在选择的type不同，那么：
+         * 用回之前用过的type
+         */
         // Some time ago some ID generation strategy was not available and SDK fell back to
         // some other strategy. We still have to use that strategy.
         if (overriddenType != null && overriddenType != type) {
@@ -116,6 +139,11 @@ public class DeviceId {
         store.setPreference(PREFERENCE_KEY_ID_TYPE, type == null ? null : type.toString());
     }
 
+
+    /**
+     * 检索/恢复 被覆盖的Type（oldType）
+     * 【在 持久层管理的 spf文件中查找这个 key 对应的 value】
+     */
     private Type retrieveOverriddenType(CountlyStore store) {
         // Using strings is safer when it comes to extending Enum values list
         String oldTypeString = store.getPreference(PREFERENCE_KEY_ID_TYPE);

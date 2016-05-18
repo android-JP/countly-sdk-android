@@ -30,14 +30,7 @@ import java.util.Map;
 /**
  *
  * local management 数据queue <---> JSON 转换类
- *
  * 注意：这里面所有的方法都没有用同步块synchroized进行标识，这是由于它都是受同一个Countly所操作，这就已经是同步了！！
- *
- * This class queues event data locally and can convert that event data to JSON
- * for submission to a Count.ly server.
- *
- * None of the methods in this class are synchronized because access to this class is
- * controlled by the Countly singleton, which is synchronized.
  *
  * NOTE: This class is only public to facilitate unit testing, because
  *       of this bug in dexmaker: https://code.google.com/p/dexmaker/issues/detail?id=34
@@ -54,6 +47,7 @@ public class EventQueue {
     }
 
     /**
+     * 返回事件（json串形式）的数量
      * Returns the number of events in the local event queue.
      * @return the number of events in the local event queue
      */
@@ -62,6 +56,8 @@ public class EventQueue {
    }
 
     /**
+     * 将本地列表中的所有当前事件（json串形式）转出来变成 List<Event>的数组形式，然后再 Object数组 -->jsonArray，最后，返回jsonArray串
+     * ，并删除所有本地事件
      * Removes all current events from the local queue and returns them as a
      * URL-encoded JSON string that can be submitted to a ConnectionQueue.
      * @return URL-encoded JSON string of event data from the local event queue
@@ -80,6 +76,7 @@ public class EventQueue {
 
         countlyStore_.removeEvents(events);
 
+        /*转格式为 UTF-8*/
         try {
             result = java.net.URLEncoder.encode(result, "UTF-8");
         } catch (UnsupportedEncodingException e) {

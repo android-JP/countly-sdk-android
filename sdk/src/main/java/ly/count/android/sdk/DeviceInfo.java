@@ -36,6 +36,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.Locale;
 
 /**
+ * 此工具类用于检索关于当前设备和操作环境的信息
+ *
  * This class provides several static methods to retrieve information about
  * the current device and operating environment.
  *

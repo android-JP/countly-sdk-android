@@ -160,8 +160,6 @@ public class Countly {
     /**
      * 如果有设备ID ，最后一个参数“deviceID”直接输入设备ID （每个设备唯一）
      *
-     *
-     *
      * Initializes the Countly SDK. Call from your main Activity's onCreate() method.
      * Must be called before other SDK methods can be used.
      * @param context application context
@@ -232,16 +230,27 @@ public class Countly {
             throw new IllegalStateException("Countly cannot be reinitialized with different values");
         }
 
-        //TODO：这里
+
+        /**
+         * 这里，某些情况下，CountlyMessaging 做一些后台处理，这就需要CountlyMessaging自己能够启用Countly，就需要存储配置信息，供其调用
+         * 【利用MessagingAdapter的方法，反射调用 sdk-messaging包中的CountlyMessaging 工具类的静态方法以 spf的方式进行配置存储】
+         */
         // In some cases CountlyMessaging does some background processing, so it needs a way
         // to start Countly on itself
         if (MessagingAdapter.isMessagingAvailable()) {
             MessagingAdapter.storeConfiguration(context, serverURL, appKey, deviceID, idMode);
         }
 
+
+        /**
+         * 到这一步，如果事件队列不为空，初始化会再以同样的参数执行一次
+         * 所以，到了这一步，一般，事件队列都会为null
+         * */
         // if we get here and eventQueue_ != null, init is being called again with the same values,
         // so there is nothing to do, because we are already initialized with those values
         if (eventQueue_ == null) {
+
+            /*1.根据生成策略，生成一个DeviceId*/
             DeviceId deviceIdInstance;
             if (deviceID != null) {
                 deviceIdInstance = new DeviceId(deviceID);
@@ -249,9 +258,16 @@ public class Countly {
                 deviceIdInstance = new DeviceId(idMode);
             }
 
+            /*初始化持久层对象（里面初始化并获取了 Countly_Store spf 文件）*/
             final CountlyStore countlyStore = new CountlyStore(context);
 
+            /*让 deviceId对象初始化（给到持久层对象）*/
             deviceIdInstance.init(context, countlyStore, true);
+
+            /**
+             * 将CountlyStore的引用同时给到：请求队列和事件队列
+             * (init的时候，才会去初始化eventQueue，所以，只有在init之后，才能去做事件记录)
+             */
 
             connectionQueue_.setServerURL(serverURL);
             connectionQueue_.setAppKey(appKey);
@@ -338,6 +354,17 @@ public class Countly {
     }
 
     /**
+     *
+     * 告诉Countly SDK，Activity已经启动了，由于Android系统没有一个简单的方式去决定什么时候一个应用实例start和stop
+     * ，所有你必须在每一个Activity的()方法中调用这个方法，为了精确的应用会话追踪
+     *
+     * 1：必须保证init方法已经被调用
+     * 2：Activity数量统计加一（如果原本没有Activity，这是第一个加进来的Activity，那么 ，将 begin_session=1 等参数给到事件中，然后保存事件，然后让处理器来发送请求给服务端）
+     * 3：检查这里是否有更新的上线数据，有，就给到请求队列去处理，然后从存储中删掉记录
+     * 4:标注app位于前台
+     * 5:如果还设置了view跟踪，那么，可以记录下当前所在的界面（最终作为一个普通的事件进行提交保存）【首个view的提交，多一个细分参数“start=1”】
+     *
+     *
      * Tells the Countly SDK that an Activity has started. Since Android does not have an
      * easy way to determine when an application instance starts and stops, you must call this
      * method from every one of your Activity's onStart methods for accurate application
@@ -355,6 +382,10 @@ public class Countly {
             onStartHelper();
         }
 
+        /**
+         * 检查这里是否有更新的上线数据，有，就给到请求队列去处理，然后从存储中删掉记录
+         * TODO：这里不太理解
+         */
         //check if there is an install referrer data
         String referrer = ReferrerReceiver.getReferrer(context_);
         if (Countly.sharedInstance().isLoggingEnabled()) {
@@ -365,23 +396,37 @@ public class Countly {
             ReferrerReceiver.deleteReferrer(context_);
         }
 
+        /*标志此时app是在前台的*/
         CrashDetails.inForeground();
 
+        /**
+         * 如果还设置了view跟踪，那么，可以记录下当前所在的界面（最终作为一个普通的事件进行提交保存）【首个view的提交，多一个细分参数“start=1”】
+         */
         if(autoViewTracker){
             recordView(activity.getClass().getName());
         }
     }
 
     /**
+     * 当第一个Activity启动的时候调用
+     * 发送一个启动会话事件给服务器，同时初始化应用会话跟踪
+     *
+     * 设定会话开始时刻为当前
+     *
      * Called when the first Activity is started. Sends a begin session event to the server
      * and initializes application session tracking.
      */
     void onStartHelper() {
-        prevSessionDurationStartTime_ = System.nanoTime();
-        connectionQueue_.beginSession();
+        prevSessionDurationStartTime_ = System.nanoTime();/*返回最准确的系统计时器的当前值，以纳秒作为单位【这个时间每次取都可以保证不一样，但是不能用于计算当前日期】*/
+        connectionQueue_.beginSession();/*请求队列调用了beginSession,将“begin_session=1”的参数给到事件中，然后保存事件，最后将事件给到请求处理器到后台执行*/
     }
 
     /**
+     * 告诉Countly SDK Activity已经停止了。
+     * （当最后一个Activity都停止后，总的activity数量为0，此时，上传会话终止请求，并处理完没有发送到服务器的事件集）
+     * 标志现在app处于后台状态
+     *
+     *
      * Tells the Countly SDK that an Activity has stopped. Since Android does not have an
      * easy way to determine when an application instance starts and stops, you must call this
      * method from every one of your Activity's onStop methods for accurate application
@@ -399,8 +444,10 @@ public class Countly {
 
         --activityCount_;
         if (activityCount_ == 0) {
+            //TODO：让请求队列发送会话终止请求 ，并处理完所有没有发送到服务器的事件集
             onStopHelper();
         }
+
 
         CrashDetails.inBackground();
 
@@ -409,6 +456,11 @@ public class Countly {
     }
 
     /**
+     * 在最后一个Activity被停止的时候调用：
+     *
+     * 1:让请求队列停止会话（将停止会话的请求发送给服务端）
+     * 2:重置 会话开始时刻为0
+     * 3:如果事件队列中还存在事件，就让请求队列去记录事件并处理事件
      * Called when final Activity is stopped. Sends an end session event to the server,
      * also sends any unsent custom events.
      */
@@ -429,6 +481,8 @@ public class Countly {
     }
 
     /**
+     *  记录一个自定义事件（事件发生次数：1 ，总计（总金额）：0）
+     *
      * Records a custom event with no segmentation values, a count of one and a sum of zero.
      * @param key name of the custom event, required, must not be the empty string
      * @throws IllegalStateException if Countly SDK has not been initialized
@@ -439,6 +493,9 @@ public class Countly {
     }
 
     /**
+     * 记录一个自定义事件（事件发生次数：count ，总计（总金额）：0）
+     *
+     *
      * Records a custom event with no segmentation values, the specified count, and a sum of zero.
      * @param key name of the custom event, required, must not be the empty string
      * @param count count to associate with the event, should be more than zero
@@ -450,6 +507,9 @@ public class Countly {
     }
 
     /**
+     *
+     * 记录一个自定义事件（事件发生次数：count ，总计（总金额）：sum）
+     *
      * Records a custom event with no segmentation values, and the specified count and sum.
      * @param key name of the custom event, required, must not be the empty string
      * @param count count to associate with the event, should be more than zero
@@ -462,6 +522,8 @@ public class Countly {
     }
 
     /**
+     * 记录一个自定义事件（细分：segmentation ，事件发生次数：count ，总计（总金额）：0）
+     *
      * Records a custom event with the specified segmentation values and count, and a sum of zero.
      * @param key name of the custom event, required, must not be the empty string
      * @param segmentation segmentation dictionary to associate with the event, can be null
@@ -474,6 +536,14 @@ public class Countly {
     }
 
     /**
+     * 最终调用的 recordEvent
+     *
+     * 记录一个自定义事件（细分：segmentation，事件发生次数：count ，总计（总金额）：sum）
+     *
+     * 1：逐个关键参数检查是否合法
+     * 2：保存到文件中
+     * 3：查看是否达到10个事件或以上，是，则提交请求给后台进行处理
+     *
      * Records a custom event with the specified values.
      * @param key name of the custom event, required, must not be the empty string
      * @param segmentation segmentation dictionary to associate with the event, can be null
@@ -504,7 +574,9 @@ public class Countly {
             }
         }
 
+        /*把事件添加进本地的spf文件中*/
         eventQueue_.recordEvent(key, segmentation, count, sum);
+        /*如果本地事件队列中的事件数量达到10个或以上，就提交所有的事件*/
         sendEventsIfNeeded();
     }
 
@@ -526,6 +598,11 @@ public class Countly {
     }
 
     /**
+     * 手动地记录一个view，在 没有自动跟踪 或者 不是自动跟踪向fragment、MessageBox或者透明Activity时
+     *
+     * 1：将 view的名称、当前时间等参数写到细分中
+     * 2：作为一个普通事件那样提交保存
+     *
      *  Record a view manualy, without automatic tracking
      * or track view that is not automatically tracked
      * like fragment, Message box or transparent Activity
@@ -677,6 +754,8 @@ public class Countly {
     }
 
     /**
+     * 添加一个崩溃痕迹（日志记录的形式），添加到日志中（这些日志被存在数组中，等待与崩溃报告一起发送）
+     *
      * Add crash breadcrumb like log record to the log that will be send together with crash report
      * @param record String a bread crumb for the crash report
      */
@@ -686,6 +765,8 @@ public class Countly {
     }
 
     /**
+     * 记录已经发生的异常，监控异常发生的形式和异常
+     *
      * Log handled exception to report it to server as non fatal crash
      * @param exception Exception to log
      */
@@ -800,6 +881,7 @@ public class Countly {
     }
 
     /**
+     * 发送最后一个view的持续时间给后台
      * Reports duration of last view
      */
     void reportViewDuration(){
@@ -815,6 +897,7 @@ public class Countly {
     }
 
     /**
+     * 如果本地的事件队列已经超过了10个事件，那么就提交所有的本地事件
      * Submits all of the locally queued events to the server if there are more than 10 of them.
      */
     void sendEventsIfNeeded() {

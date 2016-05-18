@@ -39,6 +39,14 @@ public class OpenUDIDAdapter {
         return initialized;
     }
 
+    /**
+     * 1.在 DeviceId.init()中调用到：当用到Open_Udid生成策略时，需要通过这个辅助类的这个方法
+     *
+     *
+     * 原理：通过反射，获取org.openudid.OpenUDID_manager 的静态方法： sync(Context)
+     *
+     * @param context
+     */
     public static void sync(final Context context) {
         try {
             final Class<?> cls = Class.forName(OPEN_UDID_MANAGER_CLASS_NAME);

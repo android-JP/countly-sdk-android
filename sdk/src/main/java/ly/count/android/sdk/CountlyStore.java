@@ -36,6 +36,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 此类提供一个持久层给本地的事件队列和请求队列
+ *
+ * 读方法都是非同步方法
+ * 写方法都是同步方法：一般会读取一个列表的数据，然后修改数据，然后再写回到底层存储中；当Countly单例模式已经就是同步的，这保证了在公共接口处，每次只能给到一个Writer去写
+ * ，而对于内部方法，有一个后台线程提交数据给Countly服务器，而它同样是写数据到这一个存储当中（同样遵循同步）
+ *
+ *
+ *
  * This class provides a persistence layer for the local event &amp; connection queues.
  *
  * The "read" methods in this class are not synchronized, because the underlying data store
@@ -70,6 +78,7 @@ public class CountlyStore {
     }
 
     /**
+     * 返回没排序的当前存储连接的列表【请求列表】（json串形式）
      * Returns an unsorted array of the current stored connections.
      */
     public String[] connections() {
@@ -78,6 +87,7 @@ public class CountlyStore {
     }
 
     /**
+     * 返回没排序的当前存储事件的列表【事件列表】（json串形式）
      * Returns an unsorted array of the current stored event JSON strings.
      */
     public String[] events() {
@@ -86,10 +96,11 @@ public class CountlyStore {
     }
 
     /**
+     * 返回（从入队时间先后顺序升序排列的）事件列表（Object形式）
      * Returns a list of the current stored events, sorted by timestamp from oldest to newest.
      */
     public List<Event> eventsList() {
-        final String[] array = events();
+        final String[] array = events();/*先获取事件列表（json串形式）*/
         final List<Event> events = new ArrayList<>(array.length);
         for (String s : array) {
             try {
@@ -113,6 +124,8 @@ public class CountlyStore {
     }
 
     /**
+     * 是否已经没有请求了？
+     *
      * Returns true if no connections are current stored, false otherwise.
      */
     public boolean isEmptyConnections() {
@@ -120,18 +133,21 @@ public class CountlyStore {
     }
 
     /**
+     * 添加一个请求到本地
+     * （写操作，同步标志）
      * Adds a connection to the local store.
      * @param str the connection to be added, ignored if null or empty
      */
     public synchronized void addConnection(final String str) {
         if (str != null && str.length() > 0) {
-            final List<String> connections = new ArrayList<>(Arrays.asList(connections()));
+            final List<String> connections = new ArrayList<>(Arrays.asList(connections()));/*String[] --> List<String>*/
             connections.add(str);
             preferences_.edit().putString(CONNECTIONS_PREFERENCE, join(connections, DELIMITER)).commit();
         }
     }
 
     /**
+     * 删除一个本地请求
      * Removes a connection from the local store.
      * @param str the connection to be removed, ignored if null or empty,
      *            or if a matching connection cannot be found
@@ -146,6 +162,8 @@ public class CountlyStore {
     }
 
     /**
+     * 添加一个事件到本地
+     *
      * Adds a custom event to the local store.
      * @param event event to be added to the local store, must not be null
      */
@@ -156,6 +174,7 @@ public class CountlyStore {
     }
 
     /**
+     * 设置User的经纬度，给到下一个请求上传
      * Sets location of user and sends it with next request
      */
     void setLocation(final double lat, final double lon) {
@@ -163,6 +182,7 @@ public class CountlyStore {
     }
 
     /**
+     * 获取位置信息/假使没有具体信息的情况下，返回空串
      * Get location or empty string in case if no location is specified
      */
     String getAndRemoveLocation() {
@@ -174,6 +194,8 @@ public class CountlyStore {
     }
 
     /**
+     * 添加事件
+     *
      * Adds a custom event to the local store.
      * @param key name of the custom event, required, must not be the empty string
      * @param segmentation segmentation values for the custom event, may be null
@@ -198,6 +220,8 @@ public class CountlyStore {
     }
 
     /**
+     * 在本地文件中删除所给的事件数组
+     *
      * Removes the specified events from the local store. Does nothing if the event collection
      * is null or empty.
      * @param eventsToRemove collection containing the events to remove from the local store
@@ -212,6 +236,9 @@ public class CountlyStore {
     }
 
     /**
+     * Object --> json
+     * 返回一个长json串
+     *
      * Converts a collection of Event objects to URL-encoded JSON to a string, with each
      * event JSON string delimited by the specified delimiter.
      * @param collection events to join into a delimited string
@@ -226,6 +253,8 @@ public class CountlyStore {
     }
 
     /**
+     * 将所有的请求json串用“：：：”连接起来，变成一条长串
+     *
      * Joins all the strings in the specified collection into a single string with the specified delimiter.
      */
     static String join(final Collection<String> collection, final String delimiter) {

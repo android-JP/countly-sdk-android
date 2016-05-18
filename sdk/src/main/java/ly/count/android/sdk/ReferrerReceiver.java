@@ -11,6 +11,13 @@ import android.util.Log;
  * ADB Testing
  * adb shell
  * am broadcast -a com.android.vending.INSTALL_REFERRER --es "referrer" "countly_cid%3Dcb14e5f33b528334715f1809e4572842c74686df%26countly_cuid%3Decf125107e4e27e6bcaacb3ae10ddba66459e6ae"
+ *
+ * 广播类（用于ADB 测试）
+ *
+ * 这里又是有一个spf文件的一个存取过程：referrer.xml 文件
+ * 操作1：获取referror.xml文件中的键为referrer的值（默认返回null）
+ * 操作2：删除referror.xml文件中的键为referrer的值
+ *
 **/
 //******************************************************************************
 public class ReferrerReceiver extends BroadcastReceiver
@@ -38,6 +45,12 @@ public class ReferrerReceiver extends BroadcastReceiver
     {
         try
         {
+
+            /**
+             * 如果intent不为null，并且是我们想要的意图
+             * TODO：这里有点不理解～～～～
+             */
+
             // Make sure this is the intent we expect - it always should be.
             if ((null != intent) && (intent.getAction().equals("com.android.vending.INSTALL_REFERRER")))
             {

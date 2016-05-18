@@ -51,6 +51,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
+ * 提供一系列静态方法来检索关于当前设备和操作环境信息 ，目的是发送崩溃报告
+ *
  * This class provides several static methods to retrieve information about
  * the current device and operating environment for crash reporting purposes.
  *
@@ -97,6 +99,7 @@ class CrashDetails {
     }
 
     /**
+     * 当app在前台的时候，标注一下
      * Notify when app is in foreground
      */
     static void inForeground() {
@@ -125,6 +128,8 @@ class CrashDetails {
     }
 
     /**
+     * 返回收集的log
+     *
      * Returns the collected logs.
      */
     static String getLogs() {
