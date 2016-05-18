@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ly.count.android.demo.messaging">
 
+    <!--Countly支持消息推送的相关权限设置-->
     <permission android:name="ly.count.android.demo.messaging.permission.C2D_MESSAGE"
         android:protectionLevel="signature" />
     <uses-permission android:name="ly.count.android.demo.messaging.permission.C2D_MESSAGE" />

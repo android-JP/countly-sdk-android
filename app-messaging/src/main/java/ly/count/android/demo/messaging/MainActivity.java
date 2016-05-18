@@ -26,7 +26,8 @@ public class MainActivity extends Activity {
         /** You should use cloud.count.ly instead of YOUR_SERVER for the line below if you are using Countly Cloud service */
         Countly.sharedInstance()
                 .init(this, "YOUR_SERVER", "YOUR_APP_KEY")
-                .initMessaging(this, MainActivity.class, "YOUR_PROJECT_ID(NUMBERS ONLY)", Countly.CountlyMessagingMode.TEST);
+                .initMessaging(this, MainActivity.class, "YOUR_PROJECT_ID(NUMBERS ONLY)", Countly.CountlyMessagingMode.TEST);/*这样能够在将消息发送至所有用户之前对消息进行测试，发布应用时，改成PRODUCE*/
+        /*其中 PROJECT_NUMBER 是来自于 Google 开发者控制台的项目编号，APP_KEY 是来自于 Countly 仪表盘应用管理区的应用程序密钥。*/
 //                .setLocation(LATITUDE, LONGITUDE);
 //                .setLoggingEnabled(true);
 
@@ -65,6 +66,12 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+
+
+        /**
+         * 在收到新消息时获得通知（可选步骤）
+         * 需要注册Receiver
+         */
 
         /** Register for broadcast action if you need to be notified when Countly message received */
         messageReceiver = new BroadcastReceiver() {

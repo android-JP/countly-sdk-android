@@ -1,9 +1,13 @@
 package ly.count.android.demo.useful;
 
 import android.app.Activity;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import ly.count.android.sdk.Countly;
 
@@ -31,14 +35,58 @@ public class BaseActivity extends Activity {
         /** You should use cloud.count.ly instead of YOUR_SERVER for the line below if you are using Countly Cloud service */
         Countly.sharedInstance()
                 .init(this, "YOUR_SERVER", "YOUR_APP_KEY");
+
 //                .setLocation(LATITUDE, LONGITUDE);
 //                .setLoggingEnabled(true);
 //        setUserData(); // If UserData plugin is enabled on your server
 //        enableCrashTracking();
 
+        /**
+         * 自动追踪View
+         */
+        Countly.sharedInstance().setViewTracking(true);
+
+        /**
+         * 设置并启用崩溃跟踪
+         */
+        enableCrashTracking();
+
     }
 
 
+    /**
+     * 获取手机的Android版本信息
+     * @return
+     */
+    private String getAndroidVersionFromMobile(){
+        StringBuffer sb = new StringBuffer();
+        sb.append("mobile model:").append(Build.MODEL).append(" ,SDK version:")
+                .append(Build.VERSION.SDK_INT).append(" ,system version:")
+                .append(Build.VERSION.RELEASE);
+        return sb.toString();
+    }
+
+
+    /**
+     * 获取App PackageInfo信息
+     * @return
+     */
+    private PackageInfo getAppVersion(){
+        PackageInfo info = null;
+        PackageManager manager = this.getPackageManager();
+        try{
+            info = manager.getPackageInfo(this.getPackageName(),0);
+        }catch (PackageManager.NameNotFoundException e){
+//            Countly.sharedInstance().addCrashLog(e.toString());
+            Countly.sharedInstance().logException(e);
+            e.printStackTrace();
+        }
+        return info;
+    }
+
+    /**
+     * 设置用户信息
+     */
     public void setUserData(){
         HashMap<String, String> data = new HashMap<String, String>();
         data.put("name", "Firstname Lastname");
@@ -75,16 +123,22 @@ public class BaseActivity extends Activity {
         Countly.userData.pushUniqueValue("skill", "fire");
         Countly.userData.pushUniqueValue("skill", "earth");
 
-        Countly.userData.save();
+        Countly.userData.save();/*执行数据上传的操作*/
     }
 
+    /**
+     * 启用崩溃跟踪
+     */
     public void enableCrashTracking(){
-        //add some custom segments, like dependency library versions
-        HashMap<String, String> data = new HashMap<String, String>();
-        data.put("Facebook", "3.5");
-        data.put("Admob", "6.5");
-        Countly.sharedInstance().setCustomCrashSegments(data);
-        Countly.sharedInstance().enableCrashReporting();
+          /*给crash设置自定义的细分*/
+        Map<String,String> myCustomCrashMap = new HashMap<String,String>();
+        myCustomCrashMap.put("countly_version", Countly.COUNTLY_SDK_VERSION_STRING);/*当前CountlySDK版本*/
+        myCustomCrashMap.put("app_version",getAppVersion().versionName);/*当前App版本号*/
+        myCustomCrashMap.put("mobile_msg",getAndroidVersionFromMobile());/*当前手机的系统信息*/
+        Countly.sharedInstance().setCustomCrashSegments(myCustomCrashMap);
+
+        Countly.sharedInstance().enableCrashReporting();//启用自动视图跟踪调用 、启用崩溃报告（稍后可在服务器上对崩溃报告进行检查和解决）
+
     }
 
     @Override

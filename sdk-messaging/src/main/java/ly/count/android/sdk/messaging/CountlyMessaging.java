@@ -139,9 +139,22 @@ public class CountlyMessaging extends WakefulBroadcastReceiver {
         }
     }
 
+    /**
+     * ①被 sdk的 MessagingAdapter进行调用，进行数据的存储
+     *
+     * 原理：利用SharedPreference进行 键值对方式的数据存储（保存和获取位置为：$root/data/data/$package_name/share_prefs/[获取名为PREFERENCES_NAME的Spf文件]）
+     *
+     * @param context
+     * @param serverURL
+     * @param appKey
+     * @param deviceID
+     * @param idMode
+     */
     public static void storeConfiguration(Context context, String serverURL, String appKey, String deviceID, DeviceId.Type idMode) {
+
+
         String label = "App";
-        try {
+        try {/**首先，获取应用的包名*/
             label = context.getString(context.getApplicationInfo().labelRes);
         } catch (Throwable t) {
             if (Countly.sharedInstance().isLoggingEnabled()) {
@@ -149,10 +162,14 @@ public class CountlyMessaging extends WakefulBroadcastReceiver {
             }
         }
 
+        /**视情况输出log*/
         if (Countly.sharedInstance().isLoggingEnabled()) {
             Log.i(TAG, "Storing configuration: " + label + ", " + serverURL + ", " + appKey + ", " + deviceID + ", " + idMode);
         }
 
+        /**
+         * 获取名为PREFERENCES_NAME的Spf文件，然后将配置存储到系统存储中
+         */
         SharedPreferences.Editor editor = getGCMPreferences(context).edit()
                 .putString(PROPERTY_APPLICATION_TITLE, label)
                 .putString(PROPERTY_SERVER_URL, serverURL)
@@ -160,10 +177,11 @@ public class CountlyMessaging extends WakefulBroadcastReceiver {
                 .putString(PROPERTY_DEVICE_ID, deviceID)
                 .putInt(PROPERTY_DEVICE_ID_MODE, idMode == null ? -1 : idMode.ordinal());
 
+        /*如果 context是Activity时，此时activityClass不为空，就可以将Activity的全称保存*/
         if (activityClass != null) {
             editor.putString(PROPERTY_ACTIVITY_CLASS, activityClass.getName());
         }
-
+        /*提交*/
         editor.commit();
     }
 
@@ -219,6 +237,11 @@ public class CountlyMessaging extends WakefulBroadcastReceiver {
     }
 
 
+    /**
+     * 获取名为PREFERENCES_NAME的Spf文件（模式为private）
+     * @param context
+     * @return
+     */
     private static SharedPreferences getGCMPreferences(Context context) {
         return context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
     }
